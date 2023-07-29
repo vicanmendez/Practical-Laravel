@@ -7,9 +7,11 @@ use Illuminate\Http\Request;
 use App\Models\Order;
 use Illuminate\Support\Facades\Auth;
 
-class MyAccountController extends Controller {
+class MyAccountController extends Controller
+{
 
-    public function orders(){
+    public function orders()
+    {
         $viewData = [];
         $viewData["title"] = "My Orders - Online Store";
         $viewData["subtitle"] = "My Orders";

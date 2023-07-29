@@ -12,9 +12,6 @@ use Illuminate\Support\Facades\Auth;
 use App\Mail\PurchaseNotification;
 use Illuminate\Support\Facades\Mail;
 
-
-
-
 class CartController extends Controller
 {
     //
@@ -32,67 +29,69 @@ class CartController extends Controller
         $viewData["subtitle"] = "Shopping Cart";
         $viewData["total"] = $total;
         $viewData["products"] = $productsInCart;
-        return view('cart.index') -> with ("viewData", $viewData) ;
+        return view('cart.index') -> with("viewData", $viewData) ;
     }
 
-    public function add(Request $request, $id) {
+    public function add(Request $request, $id)
+    {
         $products = $request -> session() -> get("products");
         $products[$id] = $request -> input('quantity');
         $request -> session() -> put('products', $products);
         return redirect() -> route('cart.index');
     }
 
-    public function delete(Request $request) {
+    public function delete(Request $request)
+    {
         $request -> session() -> forget('products');
         return back();
     }
 
-    public function purchase(Request $request) {
-    $productsInSession = $request -> session() -> get("products");
-    if ($productsInSession) {
-        $userId = Auth::user() -> getId();
-        $userBalance = Auth::user() -> getBalance();
-        $order = new Order();
-        $order -> setUserId($userId);
-        $order -> setTotal(0);
-        $order -> save();
-        $total = 0;
-        $productsInCart = Product::findMany(array_keys($productsInSession));
-        foreach($productsInCart as $product) {
-            $quantity = $productsInSession[$product -> getId()];
-            $item = new Item();
-            $item -> setQuantity($quantity);
-            $item -> setPrice($product -> getPrice());
-            $item -> setProductId($product -> getId());
-            $item -> setOrderId($order -> getId());
-            $item -> save();
-            $total = $total + ($product -> getPrice() * $quantity);
-        }
-        $order -> setTotal($total);
-        if($userBalance < $total) {
-            $viewData = [];
-            $viewData["title"] = "Purchase - Online Store";
-            $viewData["subtitle"] = "Purchase Status";
-            $viewData["order"] = $order;
-            $viewData["error"] = "Insufficient funds";
-            return view('cart.purchase') -> with ("viewData", $viewData) ;
-        }
-        else {
-            //If the user has enough money, save the order and update balance
+    public function purchase(Request $request)
+    {
+        $productsInSession = $request -> session() -> get("products");
+        if ($productsInSession) {
+            $userId = Auth::user() -> getId();
+            $userBalance = Auth::user() -> getBalance();
+            $order = new Order();
+            $order -> setUserId($userId);
+            $order -> setTotal(0);
             $order -> save();
-            $newBalance = Auth::user() -> getBalance() - $total;
-            Auth::user() -> setBalance($newBalance);
-            Auth::user() -> save();
-            $request -> session() -> forget('products');
-            $viewData = [];
-            $viewData["title"] = "Purchase - Online Store";
-            $viewData["subtitle"] = "Purchase Status";
-            $viewData["order"] = $order;
-            //Send an e-mail notification to the admin
-            $adminsEmail = User::where('role', 'admin')->get('email');
-            //Disable SSL verification in local environment
-            if (config('app.env') === 'local') {
-                config([
+            $total = 0;
+            $productsInCart = Product::findMany(array_keys($productsInSession));
+            foreach ($productsInCart as $product) {
+                $quantity = $productsInSession[$product -> getId()];
+                $item = new Item();
+                $item -> setQuantity($quantity);
+                $item -> setPrice($product -> getPrice());
+                $item -> setProductId($product -> getId());
+                $item -> setOrderId($order -> getId());
+                $item -> save();
+                $total = $total + ($product -> getPrice() * $quantity);
+            }
+            $order -> setTotal($total);
+            if ($userBalance < $total) {
+                $viewData = [];
+                $viewData["title"] = "Purchase - Online Store";
+                $viewData["subtitle"] = "Purchase Status";
+                $viewData["order"] = $order;
+                $viewData["error"] = "Insufficient funds";
+                return view('cart.purchase') -> with("viewData", $viewData) ;
+            } else {
+                //If the user has enough money, save the order and update balance
+                $order -> save();
+                $newBalance = Auth::user() -> getBalance() - $total;
+                Auth::user() -> setBalance($newBalance);
+                Auth::user() -> save();
+                $request -> session() -> forget('products');
+                $viewData = [];
+                $viewData["title"] = "Purchase - Online Store";
+                $viewData["subtitle"] = "Purchase Status";
+                $viewData["order"] = $order;
+                //Send an e-mail notification to the admin
+                $adminsEmail = User::where('role', 'admin')->get('email');
+                //Disable SSL verification in local environment
+                if (config('app.env') === 'local') {
+                    config([
                     'mail.mailers.smtp.stream' => [
                         'ssl' => [
                             'allow_self_signed' => true,
@@ -100,20 +99,16 @@ class CartController extends Controller
                             'verify_peer_name' => false,
                         ],
                     ],
-                ]);
+                    ]);
+                }
+                foreach ($adminsEmail as $adminEmail) {
+                    Mail::to($adminEmail)->send(new PurchaseNotification($order));
+                }
+                //Return to the view
+                return view('cart.purchase') -> with("viewData", $viewData) ;
             }
-            foreach($adminsEmail as $adminEmail) {
-                Mail::to($adminEmail)->send(new PurchaseNotification($order));
-            }
-            //Return to the view
-            return view('cart.purchase') -> with ("viewData", $viewData) ;
+        } else {
+            return redirect() -> route('cart.index');
         }
-        
-        }
-    else {
-        return redirect() -> route('cart.index');
     }
-}
-    
-
 }

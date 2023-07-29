@@ -24,7 +24,5 @@ class AdminAuthMiddleware
         }
 
         return $next($request);
-
     }
-    
 }

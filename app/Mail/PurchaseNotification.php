@@ -11,7 +11,6 @@ use Illuminate\Queue\SerializesModels;
 //Notification email for purchase
 use App\Models\Order;
 
-
 class PurchaseNotification extends Mailable
 {
     use Queueable, SerializesModels;
@@ -27,7 +26,6 @@ class PurchaseNotification extends Mailable
     {
         //
         $this->order = $order;
-
     }
 
     /**
@@ -69,6 +67,4 @@ class PurchaseNotification extends Mailable
         return $this->view('emails.purchase_notification')
                     ->subject('New Purchase Notification');
     }
-
-
 }

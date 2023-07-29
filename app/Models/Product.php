@@ -24,7 +24,8 @@ class Product extends Model
 
 
     //In order to do not repeat validators in every controller (we are using the same) we can create validator here in the model, and then use it in the controllers
-    public static function validate($request){
+    public static function validate($request)
+    {
         $request->validate([
         "name" => "required|max:255",
         "description" => "required",
@@ -45,15 +46,15 @@ class Product extends Model
     //Relation with items
     public function items()
     {
-    return $this->hasMany(Item::class);
+        return $this->hasMany(Item::class);
     }
     public function getItems()
     {
-    return $this->items;
+        return $this->items;
     }
     public function setItems($items)
     {
-    $this->items = $items;
+        $this->items = $items;
     }
     
 

@@ -18,12 +18,12 @@ class AdminOrderController extends Controller
         return view('admin.order.index') -> with("viewData", $viewData) ;
     }
 
-    public function show($id) {
+    public function show($id)
+    {
         $viewData = [];
         $viewData["title"] = "Order Details - Online Store";
         $viewData["order"] = Order::findOrFail($id);
         $viewData["items"] = $viewData["order"]->getItems();
         return view('admin.order.show') -> with("viewData", $viewData) ;
     }
-
 }
