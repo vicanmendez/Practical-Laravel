@@ -26,6 +26,9 @@ Route::get('/my-account/orders', 'App\Http\Controllers\MyAccountController@order
 
 Route::middleware('auth')->group(function () {
     Route::get('/cart/purchase', 'App\Http\Controllers\CartController@purchase')->name("cart.purchase");
+    Route::get('/cart/success', 'App\Http\Controllers\CartController@success')->name("cart.success");
+    Route::get('/cart/failure', 'App\Http\Controllers\CartController@failure')->name("cart.failure");
+    Route::get('/cart/pending', 'App\Http\Controllers\CartController@pending')->name("cart.pending");
 });
 
 Route::middleware('admin')->group(function () {

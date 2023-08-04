@@ -29,6 +29,8 @@ class CartController extends Controller
         $viewData["subtitle"] = "Shopping Cart";
         $viewData["total"] = $total;
         $viewData["products"] = $productsInCart;
+        $viewData["mercadoPagoToken"] = config('services.mercadopago.token');
+        $viewData["mercadoPagoKey"] = config('services.mercadopago.key');
         return view('cart.index') -> with("viewData", $viewData) ;
     }
 
@@ -46,7 +48,7 @@ class CartController extends Controller
         return back();
     }
 
-    public function purchase(Request $request)
+    public function success(Request $request)
     {
         $productsInSession = $request -> session() -> get("products");
         if ($productsInSession) {
@@ -69,46 +71,78 @@ class CartController extends Controller
                 $total = $total + ($product -> getPrice() * $quantity);
             }
             $order -> setTotal($total);
-            if ($userBalance < $total) {
-                $viewData = [];
-                $viewData["title"] = "Purchase - Online Store";
-                $viewData["subtitle"] = "Purchase Status";
-                $viewData["order"] = $order;
-                $viewData["error"] = "Insufficient funds";
-                return view('cart.purchase') -> with("viewData", $viewData) ;
-            } else {
-                //If the user has enough money, save the order and update balance
-                $order -> save();
-                $newBalance = Auth::user() -> getBalance() - $total;
-                Auth::user() -> setBalance($newBalance);
-                Auth::user() -> save();
-                $request -> session() -> forget('products');
-                $viewData = [];
-                $viewData["title"] = "Purchase - Online Store";
-                $viewData["subtitle"] = "Purchase Status";
-                $viewData["order"] = $order;
-                //Send an e-mail notification to the admin
-                $adminsEmail = User::where('role', 'admin')->get('email');
-                //Disable SSL verification in local environment
-                if (config('app.env') === 'local') {
-                    config([
-                    'mail.mailers.smtp.stream' => [
-                        'ssl' => [
-                            'allow_self_signed' => true,
-                            'verify_peer' => false,
-                            'verify_peer_name' => false,
-                        ],
-                    ],
-                    ]);
-                }
-                foreach ($adminsEmail as $adminEmail) {
-                    Mail::to($adminEmail)->send(new PurchaseNotification($order));
-                }
-                //Return to the view
-                return view('cart.purchase') -> with("viewData", $viewData) ;
-            }
+             //If the user has enough money, save the order and update balance
+             $order -> save();
+             $newBalance = Auth::user() -> getBalance() - $total;
+             Auth::user() -> setBalance($newBalance);
+             Auth::user() -> save();
+             $request -> session() -> forget('products');
+             $viewData = [];
+             $viewData["title"] = "Purchase - Online Store";
+             $viewData["subtitle"] = "Purchase Status";
+             $viewData["order"] = $order;
+             //Send an e-mail notification to the admin
+             $adminsEmail = User::where('role', 'admin')->get('email');
+             //Disable SSL verification in local environment
+             if (config('app.env') === 'local') {
+                 config([
+                 'mail.mailers.smtp.stream' => [
+                     'ssl' => [
+                         'allow_self_signed' => true,
+                         'verify_peer' => false,
+                         'verify_peer_name' => false,
+                     ],
+                 ],
+                 ]);
+             }
+             foreach ($adminsEmail as $adminEmail) {
+                 Mail::to($adminEmail)->send(new PurchaseNotification($order));
+             }
+             //Return to the view
+             return view('cart.purchase') -> with("viewData", $viewData) ;
         } else {
             return redirect() -> route('cart.index');
         }
     }
+
+    public function failure(Request $request) {
+        $total = 0;
+        $productsInCart = [];
+        $productsInSession = $request -> session() -> get("products");
+        if ($productsInSession) {
+            $productsInCart = Product::findMany(array_keys($productsInSession));
+            $total = Product::sumPricesByQuantities($productsInCart, $productsInSession);
+        }
+        $viewData = [];
+        $viewData["title"] = "Cart - Online Store";
+        $viewData["subtitle"] = "Shopping Cart";
+        $viewData["total"] = $total;
+        $viewData["products"] = $productsInCart;
+        $viewData["mercadoPagoToken"] = config('services.mercadopago.token');
+        $viewData["mercadoPagoKey"] = config('services.mercadopago.key');
+        $viewData["error"] = "Payment failed";
+        return view('cart.index') -> with("viewData", $viewData) ;
+    }
+
+
+    public function pending(Request $request) {
+        $total = 0;
+        $productsInCart = [];
+        $productsInSession = $request -> session() -> get("products");
+        if ($productsInSession) {
+            $productsInCart = Product::findMany(array_keys($productsInSession));
+            $total = Product::sumPricesByQuantities($productsInCart, $productsInSession);
+        }
+        $viewData = [];
+        $viewData["title"] = "Cart - Online Store";
+        $viewData["subtitle"] = "Shopping Cart";
+        $viewData["total"] = $total;
+        $viewData["products"] = $productsInCart;
+        $viewData["mercadoPagoToken"] = config('services.mercadopago.token');
+        $viewData["mercadoPagoKey"] = config('services.mercadopago.key');
+        $viewData["error"] = "Payment pending";
+        return view('cart.index') -> with("viewData", $viewData) ;
+    }
+    
+ 
 }
