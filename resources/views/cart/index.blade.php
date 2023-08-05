@@ -3,13 +3,20 @@
 @section('subtitle', $viewData["subtitle"]) 
 @section('content')
 
+<script src="https://www.paypal.com/sdk/js?client-id={{ $viewData['paypalclient']}}&currency=USD"></script>
+
 
 @php
     $items = [];
 @endphp
 
+
 <div class="card">
-    <div class="card-header">
+    <!--Display errors if applicable-->
+    @if (isset($viewData["error"]))
+        <div class="bg-danger text-center" style="color:aliceblue"> {{ $viewData["error"] }} </div>
+    @endif
+     <div class="card-header">
         Products in Cart
     </div>
     <div class="card-body">
@@ -62,11 +69,23 @@
         </div>
         
         @if (count($viewData["products"]) > 0)
+            <!-- Pay with Mercado Pago -->
             <div class="row">
                 <div class="text-end">
-                        <div id="wallet_container"> Purchase</div>
+                        <div id="wallet_container">  </div>
                 </div>
             </div>
+            <!-- Pay with PayPal -->
+            <div class="row">
+                <div class="text-end">
+                    <form action="{{ route('paypal') }}" method="post">
+                        @csrf
+                        <input type="hidden" name="amount" value="{{ $viewData["total"] }}">
+                        <button class="btn btn-primary col-xl-12" type="submit">Pay with PayPal</button>
+                    </form>
+                </div>
+
+            
         @endif
     </div>
 </div>
@@ -92,7 +111,7 @@
     $item->currency_id = "USD";
     $preference->items = array($item);
     $preference->back_urls = array(
-        "success" => route('cart.success'),
+        "success" => route('cart.success_mercadopago'),
         "failure" => route('cart.failure'),
         "pending" => route('cart.pending')
     );

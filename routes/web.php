@@ -27,9 +27,17 @@ Route::get('/my-account/orders', 'App\Http\Controllers\MyAccountController@order
 Route::middleware('auth')->group(function () {
     Route::get('/cart/purchase', 'App\Http\Controllers\CartController@purchase')->name("cart.purchase");
     Route::get('/cart/success', 'App\Http\Controllers\CartController@success')->name("cart.success");
+    Route::get('/cart/success-mercadopago', 'App\Http\Controllers\CartController@success_mercadopago')->name("cart.success_mercadopago");
+    Route::get('/cart/success-paypal', 'App\Http\Controllers\CartController@success_paypal')->name("cart.success_paypal");
     Route::get('/cart/failure', 'App\Http\Controllers\CartController@failure')->name("cart.failure");
     Route::get('/cart/pending', 'App\Http\Controllers\CartController@pending')->name("cart.pending");
 });
+
+
+Route::get('/paywithpaypal', 'App\Http\Controllers\PaypalController@payWithPaypal')->name("paywithpaypal");
+Route::post('/paypal', 'App\Http\Controllers\PaypalController@postPaymentWithpaypal')->name("paypal");
+Route::get('/paypal', 'App\Http\Controllers\PaypalController@getPaymentStatus')->name("status");
+ 
 
 Route::middleware('admin')->group(function () {
     Route::get('/admin', 'App\Http\Controllers\Admin\AdminHomeController@index')->name("admin.home.index");

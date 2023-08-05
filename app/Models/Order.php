@@ -17,6 +17,8 @@ class Order extends Model
      * $this->attributes['updated_at'] - timestamp - contains the order update date
      * $this->user - User - contains the associated User
      * $this->items - Item[] - contains the associated items
+     * $this->payment_method - string - contains the payment method
+     
      */
 
     public static function validate($request)
@@ -105,5 +107,14 @@ class Order extends Model
     public function setItems($items)
     {
         $this->items = $items;
+    }
+
+    public function getPaymentMethod()
+    {
+        return $this->attributes['payment_method'];
+    }
+
+    public function setPaymentMethod($paymentMethod) {
+        $this->attributes['payment_method'] = $paymentMethod;
     }
 }

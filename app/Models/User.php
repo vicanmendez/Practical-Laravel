@@ -21,7 +21,6 @@ class User extends Authenticatable
     * $this->attributes['password'] - string - contains the user password
     * $this->attributes['remember_token'] - string - contains the user password
     * $this->attributes['role'] - string - contains the user role (client or admin)
-    * $this->attributes['balance'] - int - contains the user balance
     * $this->attributes['created_at'] - timestamp - contains the user creation date
     * $this->attributes['updated_at'] - timestamp - contains the user update date
     */
@@ -36,7 +35,6 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'balance',
     ];
 
     /**
@@ -99,14 +97,7 @@ class User extends Authenticatable
     {
         $this -> attributes['role'] = $role;
     }
-    public function getBalance()
-    {
-        return $this -> attributes['balance'];
-    }
-    public function setBalance($balance)
-    {
-        $this -> attributes['balance'] = $balance;
-    }
+    
     public function getCreatedAt()
     {
         return $this -> attributes['created_at'];

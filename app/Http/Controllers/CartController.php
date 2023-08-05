@@ -31,6 +31,8 @@ class CartController extends Controller
         $viewData["products"] = $productsInCart;
         $viewData["mercadoPagoToken"] = config('services.mercadopago.token');
         $viewData["mercadoPagoKey"] = config('services.mercadopago.key');
+        $viewData["paypalclient"] = env('PAYPAL_CLIENT');
+
         return view('cart.index') -> with("viewData", $viewData) ;
     }
 
@@ -53,7 +55,6 @@ class CartController extends Controller
         $productsInSession = $request -> session() -> get("products");
         if ($productsInSession) {
             $userId = Auth::user() -> getId();
-            $userBalance = Auth::user() -> getBalance();
             $order = new Order();
             $order -> setUserId($userId);
             $order -> setTotal(0);
@@ -71,10 +72,7 @@ class CartController extends Controller
                 $total = $total + ($product -> getPrice() * $quantity);
             }
             $order -> setTotal($total);
-             //If the user has enough money, save the order and update balance
              $order -> save();
-             $newBalance = Auth::user() -> getBalance() - $total;
-             Auth::user() -> setBalance($newBalance);
              Auth::user() -> save();
              $request -> session() -> forget('products');
              $viewData = [];
@@ -105,6 +103,116 @@ class CartController extends Controller
         }
     }
 
+    public function success_mercadopago(Request $request)
+    {
+        $productsInSession = $request -> session() -> get("products");
+        if ($productsInSession) {
+            $userId = Auth::user() -> getId();
+            $order = new Order();
+            $order -> setUserId($userId);
+            $order -> setTotal(0);
+            $order -> save();
+            $total = 0;
+            $productsInCart = Product::findMany(array_keys($productsInSession));
+            foreach ($productsInCart as $product) {
+                $quantity = $productsInSession[$product -> getId()];
+                $item = new Item();
+                $item -> setQuantity($quantity);
+                $item -> setPrice($product -> getPrice());
+                $item -> setProductId($product -> getId());
+                $item -> setOrderId($order -> getId());
+                $item -> save();
+                $total = $total + ($product -> getPrice() * $quantity);
+            }
+            $order -> setPaymentMethod('MercadoPago');
+            $order -> setTotal($total);
+             $order -> save();
+             Auth::user() -> save();
+             $request -> session() -> forget('products');
+             $viewData = [];
+             $viewData["title"] = "Purchase - Online Store";
+             $viewData["subtitle"] = "Purchase Status";
+             $viewData["order"] = $order;
+             //Send an e-mail notification to the admin
+             $adminsEmail = User::where('role', 'admin')->get('email');
+             //Disable SSL verification in local environment
+             if (config('app.env') === 'local') {
+                 config([
+                 'mail.mailers.smtp.stream' => [
+                     'ssl' => [
+                         'allow_self_signed' => true,
+                         'verify_peer' => false,
+                         'verify_peer_name' => false,
+                     ],
+                 ],
+                 ]);
+             }
+             foreach ($adminsEmail as $adminEmail) {
+                 Mail::to($adminEmail)->send(new PurchaseNotification($order));
+             }
+             //Return to the view
+             return view('cart.purchase') -> with("viewData", $viewData) ;
+        } else {
+            return redirect() -> route('cart.index');
+        }
+    }
+
+    public function success_paypal(Request $request)
+    {
+        $productsInSession = $request -> session() -> get("products");
+        if ($productsInSession) {
+            $userId = Auth::user() -> getId();
+            $order = new Order();
+            $order -> setUserId($userId);
+            $order -> setTotal(0);
+            $order -> save();
+            $total = 0;
+            $productsInCart = Product::findMany(array_keys($productsInSession));
+            foreach ($productsInCart as $product) {
+                $quantity = $productsInSession[$product -> getId()];
+                $item = new Item();
+                $item -> setQuantity($quantity);
+                $item -> setPrice($product -> getPrice());
+                $item -> setProductId($product -> getId());
+                $item -> setOrderId($order -> getId());
+                $item -> save();
+                $total = $total + ($product -> getPrice() * $quantity);
+            }
+            $order -> setTotal($total);
+            $order -> setPaymentMethod('PayPal');
+             $order -> save();
+             Auth::user() -> save();
+             $request -> session() -> forget('products');
+             $viewData = [];
+             $viewData["title"] = "Purchase - Online Store";
+             $viewData["subtitle"] = "Purchase Status";
+             $viewData["order"] = $order;
+             //Send an e-mail notification to the admin
+             $adminsEmail = User::where('role', 'admin')->get('email');
+             //Disable SSL verification in local environment
+             if (config('app.env') === 'local') {
+                 config([
+                 'mail.mailers.smtp.stream' => [
+                     'ssl' => [
+                         'allow_self_signed' => true,
+                         'verify_peer' => false,
+                         'verify_peer_name' => false,
+                     ],
+                 ],
+                 ]);
+             }
+             foreach ($adminsEmail as $adminEmail) {
+                 Mail::to($adminEmail)->send(new PurchaseNotification($order));
+             }
+             //Return to the view
+             return view('cart.purchase') -> with("viewData", $viewData) ;
+        } else {
+            return redirect() -> route('cart.index');
+        }
+    }
+
+
+
     public function failure(Request $request) {
         $total = 0;
         $productsInCart = [];
@@ -120,6 +228,8 @@ class CartController extends Controller
         $viewData["products"] = $productsInCart;
         $viewData["mercadoPagoToken"] = config('services.mercadopago.token');
         $viewData["mercadoPagoKey"] = config('services.mercadopago.key');
+        $viewData["paypalclient"] = env('PAYPAL_CLIENT');
+
         $viewData["error"] = "Payment failed";
         return view('cart.index') -> with("viewData", $viewData) ;
     }
@@ -140,6 +250,8 @@ class CartController extends Controller
         $viewData["products"] = $productsInCart;
         $viewData["mercadoPagoToken"] = config('services.mercadopago.token');
         $viewData["mercadoPagoKey"] = config('services.mercadopago.key');
+        $viewData["paypalclient"] = env('PAYPAL_CLIENT');
+
         $viewData["error"] = "Payment pending";
         return view('cart.index') -> with("viewData", $viewData) ;
     }

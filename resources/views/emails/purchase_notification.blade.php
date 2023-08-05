@@ -2,6 +2,7 @@
 <p>Order ID: {{ $order->getId() }}</p>
 <p>Total: ${{ $order->getTotal() }}</p>
 <p>Client: {{ $order->getUser()->getName() }}</p>
+<p> Payment Method: {{ $order->getPaymentMethod() }} </p>
 <p>Products:</p>
 <ul>
     @foreach ($order->items as $item)

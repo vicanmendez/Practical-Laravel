@@ -14,9 +14,7 @@
         <!-- header -->
         <nav class="navbar navbar-expand-lg navbar-dark bg-secondary py-4">
             <div class="container">
-                @auth
-                     <span style="float: left; position:relative; margin-right:10em; color:#8cbbe4"> Your balance is: USD {{ Auth::user()->getBalance() }}</span>
-                @endauth
+              
                 <a class="navbar-brand" href="#">Online Store</a>
                 <button
                     class="navbar-toggler"
